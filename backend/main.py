@@ -153,14 +153,17 @@ async def media_stream(websocket: WebSocket):
                 stream_sid = msg["start"]["streamSid"]
                 await manager.connect_twilio(websocket, stream_sid)
 
-                # Log call to DB
-                await db.db["calls"].insert_one({
-                    "call_id": stream_sid,
-                    "twilio_call_sid": stream_sid,
-                    "status": "in_progress",
-                    "direction": "outbound",
-                    "start_time": datetime.utcnow()
-                })
+                # Log call to DB (best-effort — don't crash if MongoDB is unavailable)
+                try:
+                    await db.db["calls"].insert_one({
+                        "call_id": stream_sid,
+                        "twilio_call_sid": stream_sid,
+                        "status": "in_progress",
+                        "direction": "outbound",
+                        "start_time": datetime.utcnow()
+                    })
+                except Exception as db_err:
+                    print(f"[DB] Warning: could not log call start: {db_err}")
 
                 # Start ElevenLabs agent session
                 el_session = ElevenLabsService()
@@ -172,21 +175,28 @@ async def media_stream(websocket: WebSocket):
                 async def on_agent_event(event_data: dict):
                     """Forward transcripts/status to the UI dashboard."""
                     await manager.broadcast_ui(event_data)
-                    # Persist transcripts to DB
+                    # Persist transcripts to DB (best-effort)
                     if event_data.get("type") == "transcript":
-                        await db.db["transcripts"].insert_one({
-                            "call_id": stream_sid,
-                            "sender": event_data.get("sender"),
-                            "text": event_data.get("text"),
-                            "timestamp": datetime.utcnow()
-                        })
+                        try:
+                            await db.db["transcripts"].insert_one({
+                                "call_id": stream_sid,
+                                "sender": event_data.get("sender"),
+                                "text": event_data.get("text"),
+                                "timestamp": datetime.utcnow()
+                            })
+                        except Exception as db_err:
+                            print(f"[DB] Warning: could not log transcript: {db_err}")
 
-                await el_session.start_session(
-                    audio_callback=on_agent_audio,
-                    status_callback=on_agent_event
-                )
-                active_sessions[stream_sid] = el_session
-                print(f"[ElevenLabs] Agent session started for stream {stream_sid}")
+                try:
+                    await el_session.start_session(
+                        audio_callback=on_agent_audio,
+                        status_callback=on_agent_event
+                    )
+                    active_sessions[stream_sid] = el_session
+                    print(f"[ElevenLabs] Agent session started for stream {stream_sid}")
+                except Exception as el_err:
+                    print(f"[ElevenLabs] ERROR: Failed to start session: {el_err}")
+                    await manager.broadcast_ui({"type": "status", "status": "agent_error"})
 
             elif event == "media":
                 # Forward caller's audio to the ElevenLabs agent in real-time
@@ -208,7 +218,10 @@ async def media_stream(websocket: WebSocket):
         if stream_sid:
             active_sessions.pop(stream_sid, None)
             manager.disconnect_twilio(stream_sid)
-            await db.db["calls"].update_one(
-                {"call_id": stream_sid},
-                {"$set": {"status": "completed", "end_time": datetime.utcnow()}}
-            )
+            try:
+                await db.db["calls"].update_one(
+                    {"call_id": stream_sid},
+                    {"$set": {"status": "completed", "end_time": datetime.utcnow()}}
+                )
+            except Exception:
+                pass
