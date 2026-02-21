@@ -1,5 +1,6 @@
 import json
 import asyncio
+import urllib.request
 from datetime import datetime
 from fastapi import FastAPI, WebSocket, Request, Response, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,10 +36,29 @@ async def startup_db_client():
 async def shutdown_db_client():
     await db.close()
 
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "PhoneAgent Backend is running!"}
+
+def get_base_url(request: Request):
+    """Attempt to dynamically get ngrok URL for Twilio, fallback to request host"""
+    try:
+        req = urllib.request.Request("http://localhost:4040/api/tunnels")
+        with urllib.request.urlopen(req, timeout=1) as response:
+            data = json.loads(response.read().decode())
+            for t in data.get("tunnels", []):
+                if t.get("public_url", "").startswith("https://"):
+                    return t["public_url"]
+    except Exception:
+        pass
+    
+    host = request.headers.get("host", request.url.hostname)
+    return f"https://{host}"
+
 @app.api_route("/twiml", methods=["GET", "POST"])
 async def twiml_bot(request: Request):
-    host = request.headers.get("host", request.url.hostname)
-    ws_url = f"wss://{host}/media-stream"
+    base_url = get_base_url(request)
+    ws_url = base_url.replace("https://", "wss://").replace("http://", "ws://") + "/media-stream"
     twiml = generate_twiml(ws_url)
     return Response(content=twiml, media_type="text/xml")
 
@@ -47,9 +67,9 @@ class CallRequest(BaseModel):
 
 @app.post("/call")
 async def make_call(call_req: CallRequest, request: Request):
-    host = request.headers.get("host", request.url.hostname)
+    base_url = get_base_url(request)
     # The webhook Twilio should call when the recipient picks up
-    webhook_url = f"https://{host}/twiml"
+    webhook_url = f"{base_url}/twiml"
     try:
         call_sid = initiate_outbound_call(call_req.to_number, webhook_url)
         return {"status": "success", "call_sid": call_sid}

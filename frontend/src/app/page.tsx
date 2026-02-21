@@ -25,9 +25,8 @@ export default function Home() {
   useEffect(() => {
     // Attempt to connect to local FastAPI websocket for UI interaction
     if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      // Connect to the UI management websocket (we'll need to create this endpoint in FastAPI)
-      ws.current = new WebSocket(`ws://${hostname}:8000/ui-stream`);
+      // Connect to the UI management websocket using ngrok URL
+      ws.current = new WebSocket('wss://beverlee-unlikable-unglamourously.ngrok-free.dev/ui-stream');
 
       ws.current.onopen = () => {
         console.log('Connected to backend UI stream');
@@ -83,10 +82,12 @@ export default function Home() {
       if (!phoneNumber) return;
       setIsDialing(true);
       try {
-        const hostname = window.location.hostname;
-        const res = await fetch(`http://${hostname}:8000/call`, {
+        const res = await fetch(`https://beverlee-unlikable-unglamourously.ngrok-free.dev/call`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
           body: JSON.stringify({ to_number: phoneNumber })
         });
         if (!res.ok) {
@@ -150,8 +151,8 @@ export default function Home() {
             onClick={toggleCall}
             disabled={(!callActive && !phoneNumber) || isDialing}
             className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${callActive
-                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'
-                : (isDialing ? 'bg-blue-600/50 text-white cursor-wait' : (!phoneNumber ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed' : 'bg-white text-black hover:bg-neutral-200'))
+              ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20'
+              : (isDialing ? 'bg-blue-600/50 text-white cursor-wait' : (!phoneNumber ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed' : 'bg-white text-black hover:bg-neutral-200'))
               }`}
           >
             {isDialing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Phone className="w-5 h-5" />}
