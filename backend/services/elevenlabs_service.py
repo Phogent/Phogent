@@ -125,6 +125,23 @@ class ElevenLabsService:
 
                 async def receive_transcripts():
                     transcript_count = 0
+                    auto_commit_task: asyncio.Task | None = None
+                    
+                    # We store state in a dict so it can be mutated inside nested functions
+                    state = {
+                        "emitted_final_len": 0
+                    }
+                    
+                    async def commit_after_timeout(text_to_commit, raw_len):
+                        try:
+                            await asyncio.sleep(1.0)
+                            if text_to_commit:
+                                logger.info("STT [AUTO-COMMIT due to silence]: %r", text_to_commit)
+                                await callback(text_to_commit, True)
+                                state["emitted_final_len"] = raw_len
+                        except asyncio.CancelledError:
+                            pass
+
                     try:
                         while True:
                             response = await websocket.recv()
@@ -136,18 +153,43 @@ class ElevenLabsService:
                                 logger.info("STT session started: %s", data.get("config"))
 
                             elif event_type == "partial_transcript":
-                                text = data.get("text", "").strip()
+                                raw_text = data.get("text", "").lstrip()
+                                
+                                # Find what's new since the last auto-commit
+                                slice_idx = min(state["emitted_final_len"], len(raw_text))
+                                new_text = raw_text[slice_idx:].strip()
+                                
                                 transcript_count += 1
-                                logger.info("STT #%d [interim]: %r", transcript_count, text)
-                                if text:
-                                    await callback(text, False)
+                                logger.info("STT #%d [interim] new_text: %r", transcript_count, new_text)
+                                
+                                if new_text:
+                                    await callback(new_text, False)
+                                    
+                                if auto_commit_task is not None:
+                                    auto_commit_task.cancel()
+                                    
+                                if new_text:
+                                    auto_commit_task = asyncio.create_task(
+                                        commit_after_timeout(new_text, len(raw_text))
+                                    )
 
                             elif event_type == "committed_transcript":
-                                text = data.get("text", "").strip()
+                                raw_text = data.get("text", "").lstrip()
+                                
+                                if auto_commit_task is not None:
+                                    auto_commit_task.cancel()
+                                    
+                                slice_idx = min(state["emitted_final_len"], len(raw_text))
+                                new_text = raw_text[slice_idx:].strip()
+
                                 transcript_count += 1
-                                logger.info("STT #%d [FINAL]: %r", transcript_count, text)
-                                if text:
-                                    await callback(text, True)
+                                logger.info("STT #%d [FINAL] new_text: %r", transcript_count, new_text)
+                                
+                                if new_text:
+                                    await callback(new_text, True)
+                                    
+                                # ElevenLabs resets the accumulated text buffer for the NEXT partial transcript
+                                state["emitted_final_len"] = 0
 
                             elif event_type == "error":
                                 logger.error("STT error from server: %s", data)
@@ -157,6 +199,9 @@ class ElevenLabsService:
 
                     except websockets.exceptions.ConnectionClosed as e:
                         logger.warning("STT WebSocket closed: %s", e)
+                    finally:
+                        if auto_commit_task is not None:
+                            auto_commit_task.cancel()
 
                 await asyncio.gather(send_audio(), receive_transcripts())
 
