@@ -25,15 +25,15 @@ elevenlabs = ElevenLabsService()
 
 current_generation_task = None
 
-@app.on_event("startup")
-async def startup_db_client():
-    await db.connect()
-    print(">>> DB connected", flush=True)
+# @app.on_event("startup")
+# async def startup_db_client():
+#     await db.connect()
+#     print(">>> DB connected", flush=True)
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    await db.close()
-    print(">>> DB disconnected", flush=True)
+# @app.on_event("shutdown")
+# async def shutdown_db_client():
+#     await db.close()
+#     print(">>> DB disconnected", flush=True)
 
 @app.get("/")
 def read_root():
@@ -110,13 +110,13 @@ async def ui_stream(websocket: WebSocket):
                 # Show immediately as bot
                 await manager.broadcast_ui({"type": "transcript", "sender": "bot", "text": text})
 
-                if manager.current_stream_sid:
-                    await db.db["transcripts"].insert_one({
-                        "call_id": manager.current_stream_sid,
-                        "sender": "bot",
-                        "text": text,
-                        "timestamp": datetime.utcnow()
-                    })
+                # if manager.current_stream_sid:
+                #     await db.db["transcripts"].insert_one({
+                #         "call_id": manager.current_stream_sid,
+                #         "sender": "bot",
+                #         "text": text,
+                #         "timestamp": datetime.utcnow()
+                #     })
 
             global current_generation_task
             if current_generation_task and not current_generation_task.done():
@@ -172,12 +172,12 @@ async def process_and_stream_audio(text: str, broadcast_transcript: bool = True)
     print(f">>> TTS complete for: {text!r}", flush=True)
     if broadcast_transcript:
         await manager.broadcast_ui({"type": "transcript", "sender": "bot", "text": text})
-        await db.db["transcripts"].insert_one({
-            "call_id": stream_sid,
-            "sender": "bot",
-            "text": text,
-            "timestamp": datetime.utcnow()
-        })
+        # await db.db["transcripts"].insert_one({
+        #     "call_id": stream_sid,
+        #     "sender": "bot",
+        #     "text": text,
+        #     "timestamp": datetime.utcnow()
+        # })
 
 
 @app.websocket("/media-stream")
@@ -192,12 +192,12 @@ async def media_stream(websocket: WebSocket):
         print(f">>> STT CALLBACK is_final={is_final} text={text!r}", flush=True)
         if text.strip() and is_final:
             await manager.broadcast_ui({"type": "transcript", "sender": "caller", "text": text})
-            await db.db["transcripts"].insert_one({
-                "call_id": stream_sid,
-                "sender": "caller",
-                "text": text,
-                "timestamp": datetime.utcnow()
-            })
+            # await db.db["transcripts"].insert_one({
+            #     "call_id": stream_sid,
+            #     "sender": "caller",
+            #     "text": text,
+            #     "timestamp": datetime.utcnow()
+            # })
         elif text.strip() and not is_final:
             await manager.broadcast_ui({"type": "partial_transcript", "sender": "caller", "text": text})
 
@@ -216,13 +216,13 @@ async def media_stream(websocket: WebSocket):
                 print(f">>> STREAM STARTED sid={stream_sid} call_sid={call_sid}", flush=True)
                 await manager.connect_twilio(websocket, stream_sid, call_sid)
 
-                await db.db["calls"].insert_one({
-                    "call_id": stream_sid,
-                    "twilio_call_sid": stream_sid,
-                    "status": "in_progress",
-                    "direction": "inbound",
-                    "start_time": datetime.utcnow()
-                })
+                # await db.db["calls"].insert_one({
+                #     "call_id": stream_sid,
+                #     "twilio_call_sid": stream_sid,
+                #     "status": "in_progress",
+                #     "direction": "inbound",
+                #     "start_time": datetime.utcnow()
+                # })
 
                 stt_task = asyncio.create_task(elevenlabs.stt_stream_analyzer(stt_queue, stt_callback))
 
@@ -245,10 +245,10 @@ async def media_stream(websocket: WebSocket):
                 print(">>> STREAM STOPPED", flush=True)
                 if stream_sid:
                     manager.disconnect_twilio(stream_sid)
-                    await db.db["calls"].update_one(
-                        {"call_id": stream_sid},
-                        {"$set": {"status": "completed", "end_time": datetime.utcnow()}}
-                    )
+                    # await db.db["calls"].update_one(
+                    #     {"call_id": stream_sid},
+                    #     {"$set": {"status": "completed", "end_time": datetime.utcnow()}}
+                    # )
                 await stt_queue.put(None)
                 break
 
