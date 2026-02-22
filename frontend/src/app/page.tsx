@@ -212,7 +212,7 @@ export default function Home() {
           <input
             type="tel"
             value={phoneNumber}
-            onChange={e => setPhoneNumber(e.target.value)}
+            onChange={e => setPhoneNumber(e.target.value.replace(/[^+\d]/g, ''))}
             placeholder="+1234567890"
             className="flex-1 w-2xl min-w-0 bg-neutral-900 border border-neutral-700 text-white placeholder-neutral-500 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
           />
@@ -323,7 +323,7 @@ export default function Home() {
             <input
               type="tel"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) => setPhoneNumber(e.target.value.replace(/[^+\d]/g, ''))}
               placeholder="+1234567890"
               className="w-full bg-neutral-900 border border-neutral-700 text-white placeholder-neutral-500 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
