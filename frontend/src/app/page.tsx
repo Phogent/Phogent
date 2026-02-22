@@ -36,7 +36,7 @@ export default function Home() {
   const [mode, setMode] = useState<'tts' /* | 'agent' */>('tts');
   const [callActive, setCallActive] = useState(false);
   const [isDialing, setIsDialing] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+1');
   const [isBotPreparing, setIsBotPreparing] = useState(false);
   const [accessibilityMode, setAccessibilityMode] = useState(false);
   const [audioStreamActive, setAudioStreamActive] = useState(false);
@@ -61,7 +61,11 @@ export default function Home() {
 
   const downloadTranscript = () => {
     if (transcript.length === 0) return;
-    const text = transcript.map(m => `[${m.timestamp}] ${m.sender.toUpperCase()}: ${m.text}`).join('\n');
+    const text = transcript.map(m => {
+      const isRight = m.sender === 'bot' || m.sender === 'user';
+      const senderLabel = isRight ? 'YOU' : (m.sender === 'caller' ? phoneNumber : m.sender.toUpperCase());
+      return `[${m.timestamp}] ${senderLabel}: ${m.text}`;
+    }).join('\n');
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -134,6 +138,12 @@ export default function Home() {
           if (data.status === 'call_started') {
             setCallActive(true);
             setIsDialing(false);
+
+            // Automatically send the welcome message
+            ws.current?.send(JSON.stringify({
+              action: 'direct_tts',
+              text: "Hello, I am an AI agent. A caller is monitoring this live, and might take a few seconds to respond."
+            }));
           }
           if (data.status === 'call_ended') {
             setCallActive(false);
@@ -221,10 +231,11 @@ export default function Home() {
         )}
 
         {/* Mode toggle — compact pills */}
-        <div className="bg-neutral-900 rounded-lg p-1 shrink-0 inline-flex">
+        <div className=" bg-neutral-900 rounded-lg p-1 shrink-0">
+          {/* <div className="flex gap-1 bg-neutral-900 rounded-lg p-1 shrink-0"> */}
           <button
             onClick={() => setMode('tts')}
-            className="py-1.5 px-3 rounded-md text-xs font-medium bg-white text-black"
+            className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${mode === 'tts' ? 'bg-white text-black' : 'text-neutral-400'}`}
           >TTS</button>
           {/* <button
               onClick={() => setMode('agent')}
@@ -292,10 +303,10 @@ export default function Home() {
           <h2 className="text-sm font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-2">
             <Settings className="w-4 h-4" /> Operating Mode
           </h2>
-          <div className="bg-neutral-900 p-1 rounded-xl border border-neutral-800 inline-flex">
+          <div className="grid grid-cols-2 gap-2 bg-neutral-900 p-1 rounded-xl border border-neutral-800">
             <button
               onClick={() => setMode('tts')}
-              className="py-2 px-4 rounded-lg text-sm font-medium bg-white text-black shadow-sm"
+              className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${mode === 'tts' ? 'bg-white text-black shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
             >
               Direct TTS
             </button>
@@ -386,6 +397,7 @@ export default function Home() {
 
               {transcript.map((msg) => {
                 const isRight = msg.sender === 'bot' || msg.sender === 'user';
+                const senderLabel = isRight ? 'YOU' : (msg.sender === 'caller' ? phoneNumber : msg.sender.toUpperCase());
                 return (
                   <div key={msg.id} className={`flex ${isRight ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[70%] p-4 shadow-xl ${isRight
@@ -393,7 +405,7 @@ export default function Home() {
                       : 'bg-neutral-800/80 border border-neutral-700/50 text-neutral-200 rounded-2xl rounded-tl-sm'
                       }`}>
                       <p className="text-[15px] leading-relaxed">{msg.text}</p>
-                      <span className="text-[11px] text-neutral-500 mt-2 block font-medium uppercase tracking-wider">{msg.sender} • {msg.timestamp}</span>
+                      <span className="text-[11px] text-neutral-500 mt-2 block font-medium uppercase tracking-wider">{senderLabel} • {msg.timestamp}</span>
                     </div>
                   </div>
                 );
