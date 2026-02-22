@@ -36,13 +36,19 @@ export default function Home() {
   }, [transcript, partialTranscript, isBotPreparing]);
 
   useEffect(() => {
-    // Attempt to connect to local FastAPI websocket for UI interaction
     if (typeof window !== 'undefined') {
-      // Connect to the UI management websocket using ngrok URL
-      ws.current = new WebSocket('wss://ambroise-skimpy-condescendingly.ngrok-free.dev/ui-stream');
+      const isSecure = window.location.protocol === 'https:';
+      const defaultWsBase = isSecure ? `wss://${window.location.host}` : `ws://${window.location.host}`;
+
+      // Use env variable if provided, fallback to relative path on same host
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL
+        ? `${process.env.NEXT_PUBLIC_WS_URL}/ui-stream`
+        : (process.env.NODE_ENV === 'development' ? 'ws://localhost:8000/ui-stream' : `${defaultWsBase}/ui-stream`);
+
+      ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('Connected to backend UI stream');
+        console.log(`Connected to backend UI stream at ${wsUrl}`);
       };
 
       ws.current.onmessage = (event) => {
@@ -91,9 +97,11 @@ export default function Home() {
   };
 
   const toggleCall = async () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+
     if (callActive) {
       try {
-        await fetch(`https://ambroise-skimpy-condescendingly.ngrok-free.dev/hangup`, {
+        await fetch(`${apiUrl}/hangup`, {
           method: "POST"
         });
       } catch (err) {
@@ -104,7 +112,7 @@ export default function Home() {
       if (!phoneNumber) return;
       setIsDialing(true);
       try {
-        const res = await fetch(`https://ambroise-skimpy-condescendingly.ngrok-free.dev/call`, {
+        const res = await fetch(`${apiUrl}/call`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
