@@ -5,7 +5,6 @@ from datetime import datetime
 from fastapi import FastAPI, WebSocket, Request, Response, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from backend.database.mongo import db
 from backend.services.twilio_service import generate_twiml, initiate_outbound_call, twilio_client
 from backend.services.connection_manager import manager
 from backend.services.elevenlabs_service import ElevenLabsService
