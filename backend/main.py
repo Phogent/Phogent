@@ -140,6 +140,13 @@ async def ui_stream(websocket: WebSocket):
         manager.disconnect_ui(websocket)
 
 
+def _is_yelling(text: str) -> bool:
+    """Return True if all alphabetic characters in the text are uppercase (ALL CAPS)."""
+    stripped = text.strip()
+    # Must have at least one letter, and all letters must be uppercase
+    return stripped.isascii() and any(c.isalpha() for c in stripped) and stripped == stripped.upper()
+
+
 async def process_and_stream_audio(text: str, broadcast_transcript: bool = True):
     """Takes a text string, streams TTS audio to Twilio."""
     audio_queue = asyncio.Queue()
@@ -162,10 +169,14 @@ async def process_and_stream_audio(text: str, broadcast_transcript: bool = True)
 
     twilio_sender = asyncio.create_task(send_audio_to_twilio_task())
 
+    yelling = _is_yelling(text)
+    if yelling:
+        print(f">>> YELLING MODE ACTIVATED for: {text!r}", flush=True)
+
     async def text_iterator():
         yield text
 
-    await elevenlabs.tts_stream_generator(text_iterator(), audio_queue)
+    await elevenlabs.tts_stream_generator(text_iterator(), audio_queue, is_yelling=yelling)
 
     await audio_queue.put(None)
     await twilio_sender

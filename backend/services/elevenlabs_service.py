@@ -27,16 +27,23 @@ class ElevenLabsService:
         self.voice_id = voice_id
         logger.debug("ElevenLabsService initialized with voice_id=%s", voice_id)
 
-    async def tts_stream_generator(self, text_iterator, output_queue: asyncio.Queue):
+    async def tts_stream_generator(self, text_iterator, output_queue: asyncio.Queue, is_yelling: bool = False):
         """
         Connects to ElevenLabs TTS WebSocket, sends text from `text_iterator`,
         and puts returned audio chunks (base64 ulaw) into `output_queue`.
+        If is_yelling is True, voice settings are adjusted for an intense, shouting effect.
         """
         uri = (
             f"wss://api.elevenlabs.io/v1/text-to-speech/{self.voice_id}/stream-input"
             f"?model_id=eleven_turbo_v2&output_format=ulaw_8000"
         )
-        logger.debug("TTS connecting to: %s", uri)
+        logger.debug("TTS connecting to: %s (yelling=%s)", uri, is_yelling)
+
+        # Yelling: low stability = more dramatic/intense, high style = expressive
+        if is_yelling:
+            voice_settings = {"stability": 0.15, "similarity_boost": 0.9, "style": 0.85, "use_speaker_boost": True}
+        else:
+            voice_settings = {"stability": 0.5, "similarity_boost": 0.8}
 
         try:
             async with websockets.connect(
@@ -47,9 +54,9 @@ class ElevenLabsService:
 
                 await websocket.send(json.dumps({
                     "text": " ",
-                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}
+                    "voice_settings": voice_settings
                 }))
-                logger.debug("TTS init message sent")
+                logger.debug("TTS init message sent (yelling=%s)", is_yelling)
 
                 async def send_text():
                     chunk_count = 0
