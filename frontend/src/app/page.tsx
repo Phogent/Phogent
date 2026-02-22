@@ -212,7 +212,7 @@ export default function Home() {
   return (
     <div className="flex flex-col md:flex-row h-screen bg-neutral-950 text-neutral-100 font-sans">
       {/* Mobile Menu */}
-      <div className="flex fixed top-0 w-full md:hidden items-center justify-center gap-3 px-4 py-3 bg-neutral-800/50 rounded-b-md">
+      <div className="flex fixed z-50 top-0 w-full md:hidden items-center justify-center gap-3 px-4 py-3 bg-neutral-800/50 rounded-b-md">
         {/* Phone number input */}
         {!callActive && (
           <input
@@ -351,7 +351,7 @@ export default function Home() {
       {/* Main Transcript Window */}
       <div className="flex-1 flex flex-col relative mt-15 md:mt-0">
         {callActive && (
-          <div className="absolute top-0 left-0 right-0 bg-blue-600/10 border-b border-blue-500/20 text-blue-400 py-3 px-6 flex justify-between items-center z-10 backdrop-blur-md shadow-sm">
+          <div className="absolute z-50top-0 left-0 right-0 bg-blue-600/10 border-b border-blue-500/20 text-blue-400 py-3 px-6 flex justify-between items-center z-10 backdrop-blur-md shadow-sm">
             <div className="flex items-center gap-3">
               <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -443,7 +443,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-neutral-950 via-neutral-950/95 to-transparent pt-12">
+        <div className="absolute bottom-0 mt-15 left-0 right-0 p-6 bg-gradient-to-t from-neutral-950 via-neutral-950/95 to-transparent pt-12">
           {accessibilityMode && (
             <div className="max-w-4xl mx-auto mb-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-4 py-2 rounded-xl text-xs flex justify-between items-center">
               <span>🎤 <strong>Voice Activation is Active.</strong> Say "Send Message" to submit your text. Say "Interrogate Mode" to switch styles.</span>
