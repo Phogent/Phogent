@@ -369,8 +369,10 @@ export default function Home() {
 
       {/* Main Transcript Window */}
       <div className="flex-1 flex flex-col relative mt-15 md:mt-0">
-        {callActive && (
-          <div className="fixed top-15 left-0 right-0 bg-blue-600/10 border-b border-blue-500/20 text-blue-400 py-3 px-6 flex justify-between items-center z-10 backdrop-blur-md shadow-sm">
+
+        <div className="flex-1 overflow-y-auto pb-32 flex flex-col relative">
+             {true && (
+          <div className="sticky bg-blue-600/10 border-b border-blue-500/20 text-blue-400 py-3 px-6 flex justify-between items-center z-10 backdrop-blur-md shadow-sm">
             <div className="flex items-center gap-3">
               <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -403,9 +405,7 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        <div className="flex-1 p-8 overflow-y-auto pt-24 pb-32 flex flex-col relative">
-          <div className="flex-1 w-full mt-auto">
+          <div className="flex-1  pt-24 w-full mt-auto">
             <div className="space-y-6">
               {transcript.length === 0 && !isBotPreparing && !partialTranscript && (
                 <div className="text-center text-neutral-00 flex flex-col items-center justify-center h-full gap-4 mt-32">
