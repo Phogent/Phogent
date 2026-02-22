@@ -212,7 +212,7 @@ export default function Home() {
   return (
     <div className="flex flex-col md:flex-row h-screen bg-neutral-950 text-neutral-100 font-sans">
       {/* Mobile Menu */}
-      <div className="flex fixed top-0 md:hidden items-center gap-3 px-4 py-3">
+      <div className="flex fixed top-0 w-full md:hidden items-center justify-center gap-3 px-4 py-3 bg-neutral-800/50 rounded-b-md">
         {/* Phone number input */}
         {!callActive && (
           <input
@@ -220,7 +220,7 @@ export default function Home() {
             value={phoneNumber}
             onChange={e => setPhoneNumber(e.target.value)}
             placeholder="+1234567890"
-            className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 text-white placeholder-neutral-500 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="flex-1 w-2xl min-w-0 bg-neutral-900 border border-neutral-700 text-white placeholder-neutral-500 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
           />
         )}
         {callActive && (
@@ -231,11 +231,10 @@ export default function Home() {
         )}
 
         {/* Mode toggle — compact pills */}
-        <div className=" bg-neutral-900 rounded-lg p-1 shrink-0">
-          {/* <div className="flex gap-1 bg-neutral-900 rounded-lg p-1 shrink-0"> */}
+        <div className="bg-neutral-900 rounded-lg p-1 shrink-0 inline-flex">
           <button
             onClick={() => setMode('tts')}
-            className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${mode === 'tts' ? 'bg-white text-black' : 'text-neutral-400'}`}
+            className="py-1.5 px-3 rounded-md text-xs font-medium bg-white text-black"
           >TTS</button>
           {/* <button
               onClick={() => setMode('agent')}
@@ -247,7 +246,7 @@ export default function Home() {
         <button
           onClick={toggleCall}
           disabled={isDialing || (!callActive && !phoneNumber)}
-          className={`shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40 ${callActive ? 'bg-red-600 hover:bg-red-500' : 'bg-emerald-600 hover:bg-emerald-500'
+          className={`shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40 ${callActive ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600/50 hover:bg-blue-600'
             }`}
         >
           {isDialing ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
@@ -275,7 +274,7 @@ export default function Home() {
       </div>
       {/* Sidebar / Settings */}
 
-      <div className="hidden md:flex w-full md:w-72 md:min-w-72 md:h-full border-r border-neutral-800 bg-neutral-900/50 p-6 flex-col gap-8">
+      <div className="hidden md:flex w-full md:w-72 md:min-w-72 md:h-full border-r border-neutral-800 bg-neutral-800/50 p-6 flex-col gap-8">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-white mb-2 flex items-center gap-2">
             <Mic className="text-blue-500" /> Phogent
@@ -303,13 +302,14 @@ export default function Home() {
           <h2 className="text-sm font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-2">
             <Settings className="w-4 h-4" /> Operating Mode
           </h2>
-          <div className="grid grid-cols-2 gap-2 bg-neutral-900 p-1 rounded-xl border border-neutral-800">
+               <div className="bg-neutral-900 p-1 rounded-xl border border-neutral-800 inline-flex">
             <button
               onClick={() => setMode('tts')}
-              className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${mode === 'tts' ? 'bg-white text-black shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
+              className="py-2 px-4 rounded-lg text-sm font-medium bg-white text-black shadow-sm"
             >
               Direct TTS
             </button>
+            
             {/* <button
               onClick={() => setMode('agent')}
               className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${mode === 'agent' ? 'bg-blue-600 text-white shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
@@ -349,7 +349,7 @@ export default function Home() {
       </div>
 
       {/* Main Transcript Window */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative mt-15 md:mt-0">
         {callActive && (
           <div className="absolute top-0 left-0 right-0 bg-blue-600/10 border-b border-blue-500/20 text-blue-400 py-3 px-6 flex justify-between items-center z-10 backdrop-blur-md shadow-sm">
             <div className="flex items-center gap-3">
@@ -362,7 +362,7 @@ export default function Home() {
 
             <div className="flex items-center gap-4">
               {/* Accessibility Toggle */}
-              <button
+              {/* <button
                 onClick={() => setAccessibilityMode(!accessibilityMode)}
                 className={`text-sm font-medium flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${accessibilityMode ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-neutral-800/50 text-neutral-400 border-neutral-700/50 hover:text-white'
                   }`}
@@ -370,7 +370,7 @@ export default function Home() {
               >
                 <Accessibility className="w-4 h-4" />
                 <span className="hidden sm:inline">A11y Mode</span>
-              </button>
+              </button> */}
 
               {/* Audio Playback Toggle */}
               <button
@@ -389,8 +389,8 @@ export default function Home() {
           <div className="flex-1 w-full mt-auto">
             <div className="space-y-6">
               {transcript.length === 0 && !isBotPreparing && !partialTranscript && (
-                <div className="text-center text-neutral-600 flex flex-col items-center justify-center h-full gap-4 mt-32">
-                  <RefreshCw className="w-8 h-8 opacity-20" />
+                <div className="text-center text-neutral-00 flex flex-col items-center justify-center h-full gap-4 mt-32">
+                  <RefreshCw className="w-8 h-8 opacity-50" />
                   <p>No messages yet. Start a call or type below.</p>
                 </div>
               )}
@@ -456,14 +456,14 @@ export default function Home() {
               onChange={(e) => setInputText(e.target.value)}
               disabled={!callActive}
               placeholder={callActive ? "Type to speak immediately (interrupts ongoing speech)..." /* mode === 'tts' ? ... : "Prompt the AI to respond..." */ : "Start a call to begin typing"}
-              className={`w-full bg-neutral-900 border ${callActive ? 'border-neutral-700 focus:border-blue-500 focus:ring-blue-500/50' : 'border-neutral-800 opacity-50 cursor-not-allowed'} text-white placeholder-neutral-500 rounded-2xl py-4 pl-6 pr-16 focus:outline-none focus:ring-2 transition-all shadow-2xl`}
+              className={`w-full bg-neutral-700 border ${callActive ? 'border-neutral-700 focus:border-blue-500 focus:ring-blue-500/50' : 'border-neutral-800 opacity-50 cursor-not-allowed'} text-white placeholder-neutral-100 rounded-2xl py-4 pl-6 pr-16 focus:outline-none focus:ring-2 transition-all shadow-2xl`}
             />
             <button
               type="submit"
               disabled={!callActive || !inputText.trim()}
               className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all ${callActive && inputText.trim()
                 ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-md'
-                : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                : 'bg-neutral-500 text-neutral-600 cursor-not-allowed'
                 }`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -473,8 +473,8 @@ export default function Home() {
             <span className="text-[11px] text-neutral-500">
               {mode === 'tts' && inputText.length > 0 && "Submitting this will explicitly interrupt any ongoing bot speech."}
             </span>
-            <span className="text-[11px] text-neutral-500 flex items-center gap-1">
-              Press <kbd className="bg-neutral-800 px-1.5 py-0.5 rounded font-mono mx-1 border border-neutral-700">Enter</kbd> to {mode === 'tts' ? 'speak' : 'generate'}
+            <span className="text-[11px] text-neutral-300 flex items-center gap-1">
+              Press <kbd className="bg-neutral-700 px-1.5 py-0.5 rounded font-mono mx-1 border border-neutral-700">Enter</kbd> to {mode === 'tts' ? 'speak' : 'generate'}
             </span>
           </div>
         </div>

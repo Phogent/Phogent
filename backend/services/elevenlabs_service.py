@@ -16,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger("ElevenLabsService")
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-DEFAULT_VOICE_ID = "iCEMyUhOwgAy0egMANye"
+DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 
 if not ELEVENLABS_API_KEY:
     logger.warning("ELEVENLABS_API_KEY is not set — requests will likely fail")
