@@ -134,9 +134,61 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-neutral-950 text-neutral-100 font-sans">
+    <div className="flex flex-col md:flex-row h-screen bg-neutral-950 text-neutral-100 font-sans">
+      <div className="flex md:hidden items-center gap-3 px-4 py-3">
+          {/* Phone number input */}
+          {!callActive && (
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={e => setPhoneNumber(e.target.value)}
+              placeholder="+1234567890"
+              className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 text-white placeholder-neutral-500 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            />
+          )}
+          {callActive && (
+            <span className="flex-1 text-sm text-emerald-400 font-medium flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+              Live call
+            </span>
+          )}
+
+          {/* Mode toggle — compact pills */}
+          <div className="flex gap-1 bg-neutral-900 rounded-lg p-1 shrink-0">
+            <button
+              onClick={() => setMode('tts')}
+              className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${mode === 'tts' ? 'bg-white text-black' : 'text-neutral-400'}`}
+            >TTS</button>
+            <button
+              onClick={() => setMode('agent')}
+              className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${mode === 'agent' ? 'bg-blue-600 text-white' : 'text-neutral-400'}`}
+            >Agent</button>
+          </div>
+
+          {/* Call button */}
+          <button
+            onClick={toggleCall}
+            disabled={isDialing || (!callActive && !phoneNumber)}
+            className={`shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40 ${
+              callActive ? 'bg-red-600 hover:bg-red-500' : 'bg-emerald-600 hover:bg-emerald-500'
+            }`}
+          >
+            {isDialing ? <RefreshCw size={14} className="animate-spin" /> : <Phone size={14} />}
+            {isDialing ? 'Dialing' : callActive ? 'End' : 'Call'}
+          </button>
+
+          {/* Clear */}
+          <button
+            onClick={() => { setTranscript([]); setPartialTranscript(''); }}
+            className="shrink-0 p-2 border border-neutral-700 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400"
+            title="Clear transcript"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
       {/* Sidebar / Settings */}
-      <div className="w-80 border-r border-neutral-800 bg-neutral-900/50 p-6 flex flex-col gap-8">
+
+      <div className="hidden md:flex w-full md:w-72 md:min-w-72 md:h-full border-r border-neutral-800 bg-neutral-900/50 p-6 flex-col gap-8">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-white mb-2 flex items-center gap-2">
             <Mic className="text-blue-500" /> Voice Surrogate
