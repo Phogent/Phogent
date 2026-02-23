@@ -33,7 +33,7 @@ elevenlabs = ElevenLabsService()
 current_generation_task = None
 
 # --- Typing Indicator Init ---
-TYPING_INDICATOR_AUDIO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Typing Indicator Blips.mp3")
+TYPING_INDICATOR_AUDIO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Typing Indicator Smooth .mp3")
 TYPING_AUDIO_CHUNKS = []
 typing_indicator_task = None
 
@@ -41,13 +41,18 @@ print(f">>> Loading typing indicator audio from: {TYPING_INDICATOR_AUDIO_PATH}",
 try:
     if os.path.exists(TYPING_INDICATOR_AUDIO_PATH):
         decoded = miniaudio.decode_file(TYPING_INDICATOR_AUDIO_PATH, sample_rate=8000, nchannels=1, output_format=miniaudio.SampleFormat.SIGNED16)
+        # Reduce volume by ~3dB (amplitude multiplier of 10^(-3/20) \approx 0.7079)
+        adjusted_samples = audioop.mul(decoded.samples, 2, 0.7079)
         # Convert 16-bit PCM to 8-bit ulaw
-        ulaw_data = audioop.lin2ulaw(decoded.samples, 2)
-        chunk_size = 160 # 160 bytes = 20ms of 8kHz ulaw
+        ulaw_data = audioop.lin2ulaw(adjusted_samples, 2)
+        chunk_size = 4000 # 4000 bytes = 500ms of 8kHz ulaw
         for i in range(0, len(ulaw_data), chunk_size):
             chunk = ulaw_data[i:i+chunk_size]
+            if len(chunk) < chunk_size:
+                # Pad final chunk with mu-law silence (0xFF) to match exactly 500ms to avoid any pops
+                chunk += b'\xff' * (chunk_size - len(chunk))
             TYPING_AUDIO_CHUNKS.append(base64.b64encode(chunk).decode("ascii"))
-        print(f">>> Successfully loaded {len(TYPING_AUDIO_CHUNKS)} typing indicator chunks.")
+        print(f">>> Successfully loaded {len(TYPING_AUDIO_CHUNKS)} typing indicator chunks (500ms each).")
     else:
         print(f">>> WARNING: Typing indicator file not found at {TYPING_INDICATOR_AUDIO_PATH}")
 except Exception as e:
@@ -136,12 +141,13 @@ async def ui_stream(websocket: WebSocket):
                     async def play_typing_audio():
                         print(">>> Starting typing audio task", flush=True)
                         try:
-                            # Play the sound effect once, then pause, then repeat
+                            # Wait 2 seconds before playing to avoid triggering on very short messages
+                            await asyncio.sleep(2.0)
+                            # Play the sound effect continuously without pausing
                             while True:
                                 for chunk in TYPING_AUDIO_CHUNKS:
                                     await manager.send_audio_to_twilio(manager.current_stream_sid, chunk)
-                                    await asyncio.sleep(0.02)
-                                await asyncio.sleep(1.0) # wait before playing again
+                                    await asyncio.sleep(0.48) # Sleep 480ms per 500ms chunk to keep buffer solidly full
                         except asyncio.CancelledError:
                             print(">>> Typing audio task cancelled", flush=True)
                     typing_indicator_task = asyncio.create_task(play_typing_audio())
@@ -151,6 +157,8 @@ async def ui_stream(websocket: WebSocket):
                 if typing_indicator_task and not typing_indicator_task.done():
                     typing_indicator_task.cancel()
                     typing_indicator_task = None
+                    if manager.current_stream_sid:
+                        await manager.clear_twilio_buffer(manager.current_stream_sid)
                 continue
 
             if not text:
