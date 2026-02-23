@@ -33,8 +33,9 @@ elevenlabs = ElevenLabsService()
 current_generation_task = None
 
 # --- Typing Indicator Init ---
+import time
 TYPING_INDICATOR_AUDIO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Typing Indicator Smooth .mp3")
-TYPING_AUDIO_CHUNKS = []
+TYPING_ULAW_DATA = b""
 typing_indicator_task = None
 
 print(f">>> Loading typing indicator audio from: {TYPING_INDICATOR_AUDIO_PATH}", flush=True)
@@ -44,15 +45,8 @@ try:
         # Reduce volume by ~3dB (amplitude multiplier of 10^(-3/20) \approx 0.7079)
         adjusted_samples = audioop.mul(decoded.samples, 2, 0.7079)
         # Convert 16-bit PCM to 8-bit ulaw
-        ulaw_data = audioop.lin2ulaw(adjusted_samples, 2)
-        chunk_size = 4000 # 4000 bytes = 500ms of 8kHz ulaw
-        for i in range(0, len(ulaw_data), chunk_size):
-            chunk = ulaw_data[i:i+chunk_size]
-            if len(chunk) < chunk_size:
-                # Pad final chunk with mu-law silence (0xFF) to match exactly 500ms to avoid any pops
-                chunk += b'\xff' * (chunk_size - len(chunk))
-            TYPING_AUDIO_CHUNKS.append(base64.b64encode(chunk).decode("ascii"))
-        print(f">>> Successfully loaded {len(TYPING_AUDIO_CHUNKS)} typing indicator chunks (500ms each).")
+        TYPING_ULAW_DATA = audioop.lin2ulaw(adjusted_samples, 2)
+        print(f">>> Successfully loaded {len(TYPING_ULAW_DATA)} bytes of typing indicator.")
     else:
         print(f">>> WARNING: Typing indicator file not found at {TYPING_INDICATOR_AUDIO_PATH}")
 except Exception as e:
@@ -137,17 +131,47 @@ async def ui_stream(websocket: WebSocket):
 
             if action == "typing":
                 print(">>> Received typing event from UI", flush=True)
-                if manager.current_stream_sid and TYPING_AUDIO_CHUNKS and (typing_indicator_task is None or typing_indicator_task.done()):
+                if manager.current_stream_sid and TYPING_ULAW_DATA and (typing_indicator_task is None or typing_indicator_task.done()):
                     async def play_typing_audio():
                         print(">>> Starting typing audio task", flush=True)
                         try:
                             # Wait 2 seconds before playing to avoid triggering on very short messages
                             await asyncio.sleep(2.0)
-                            # Play the sound effect continuously without pausing
+                            
+                            # Play the sound effect continuously by tracking time
+                            # Send 100ms (800 bytes) chunks at exactly the rate of time passage
+                            start_time = time.time()
+                            elapsed_audio_time = 0.0
+                            offset = 0
+                            chunk_size = 800  # 100ms at 8kHz ulaw
+                            
                             while True:
-                                for chunk in TYPING_AUDIO_CHUNKS:
-                                    await manager.send_audio_to_twilio(manager.current_stream_sid, chunk)
-                                    await asyncio.sleep(0.48) # Sleep 480ms per 500ms chunk to keep buffer solidly full
+                                # Get next chunk seamlessly wrapping around
+                                if offset + chunk_size <= len(TYPING_ULAW_DATA):
+                                    chunk = TYPING_ULAW_DATA[offset:offset+chunk_size]
+                                    offset += chunk_size
+                                else:
+                                    first_part = TYPING_ULAW_DATA[offset:]
+                                    remaining = chunk_size - len(first_part)
+                                    chunk = first_part + TYPING_ULAW_DATA[:remaining]
+                                    offset = remaining
+                                
+                                b64_chunk = base64.b64encode(chunk).decode("ascii")
+                                await manager.send_audio_to_twilio(manager.current_stream_sid, b64_chunk)
+                                
+                                # 100ms chunk
+                                elapsed_audio_time += 0.100 
+                                
+                                # Sleep exactly enough to maintain a small 100ms buffer lead
+                                current_time = time.time()
+                                time_to_sleep = (start_time + elapsed_audio_time) - current_time
+                                
+                                if time_to_sleep > 0:
+                                    await asyncio.sleep(time_to_sleep)
+                                else:
+                                    # If we are falling behind somehow, yield to event loop briefly
+                                    await asyncio.sleep(0.001)
+                                    
                         except asyncio.CancelledError:
                             print(">>> Typing audio task cancelled", flush=True)
                     typing_indicator_task = asyncio.create_task(play_typing_audio())
@@ -157,8 +181,6 @@ async def ui_stream(websocket: WebSocket):
                 if typing_indicator_task and not typing_indicator_task.done():
                     typing_indicator_task.cancel()
                     typing_indicator_task = None
-                    if manager.current_stream_sid:
-                        await manager.clear_twilio_buffer(manager.current_stream_sid)
                 continue
 
             if not text:
