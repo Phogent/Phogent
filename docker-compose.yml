@@ -31,7 +31,7 @@ services:
       - proxy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.phoneagent-frontend.rule=Host(`phone-agent.lucaswebber.dev`)"
+      - "traefik.http.routers.phoneagent-frontend.rule=Host(`phone-agent.lucaswebber.dev`) || Host(`phogent.app`)"
       - "traefik.http.routers.phoneagent-frontend.entrypoints=https"
       - "traefik.http.routers.phoneagent-frontend.tls.certresolver=dns-cloudflare"
       - "traefik.http.services.phoneagent-frontend.loadbalancer.server.port=3000"
