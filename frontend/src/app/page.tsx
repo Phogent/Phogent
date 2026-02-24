@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Mic, Search, Settings, Phone, MessageSquare, Play, RefreshCw, Accessibility, Volume2, Ear, Download } from 'lucide-react';
-import { authClient } from "@/lib/auth-client"
+import { authClient } from "../lib/auth-client"
 
 const { data: session, error } = await authClient.getSession()
 // Mu-law decoding table
