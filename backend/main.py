@@ -42,8 +42,8 @@ print(f">>> Loading typing indicator audio from: {TYPING_INDICATOR_AUDIO_PATH}",
 try:
     if os.path.exists(TYPING_INDICATOR_AUDIO_PATH):
         decoded = miniaudio.decode_file(TYPING_INDICATOR_AUDIO_PATH, sample_rate=8000, nchannels=1, output_format=miniaudio.SampleFormat.SIGNED16)
-        # Reduce volume by ~3dB (amplitude multiplier of 10^(-3/20) \approx 0.7079)
-        adjusted_samples = audioop.mul(decoded.samples, 2, 0.7079)
+        # Reduce volume by ~6dB (amplitude multiplier of 10^(-6/20) \approx 0.5012)
+        adjusted_samples = audioop.mul(decoded.samples, 2, 0.5012)
         # Convert 16-bit PCM to 8-bit ulaw
         TYPING_ULAW_DATA = audioop.lin2ulaw(adjusted_samples, 2)
         print(f">>> Successfully loaded {len(TYPING_ULAW_DATA)} bytes of typing indicator.")
