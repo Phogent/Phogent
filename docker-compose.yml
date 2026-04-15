@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: ghcr.io/phogent/phogent-backend:latest
     restart: unless-stopped
     environment:
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
@@ -23,6 +24,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: ghcr.io/phogent/phogent-frontend:latest
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_BACKEND_API_URL=https://phone-agent-api.lucaswebber.dev
