@@ -52,11 +52,17 @@ class ElevenLabsService:
             ) as websocket:
                 logger.info("TTS WebSocket connected")
 
+                # Fetch the first chunk to send with the initial voice_settings payload
+                try:
+                    first_chunk = await anext(text_iterator)
+                except StopAsyncIteration:
+                    first_chunk = ""
+
                 await websocket.send(json.dumps({
-                    "text": " ",
+                    "text": first_chunk + (" " if first_chunk else ""),
                     "voice_settings": voice_settings
                 }))
-                logger.debug("TTS init message sent (yelling=%s)", is_yelling)
+                logger.debug("TTS init message sent with first chunk (yelling=%s)", is_yelling)
 
                 async def send_text():
                     chunk_count = 0
