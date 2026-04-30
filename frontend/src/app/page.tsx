@@ -96,7 +96,7 @@ export default function Home() {
 
       // Use env variable if provided, fallback to localhost in dev or relative path in prod
       const wsUrl = process.env.NEXT_PUBLIC_WS_URL
-        ? process.env.NEXT_PUBLIC_WS_URL
+        ? `${process.env.NEXT_PUBLIC_WS_URL}/ui-stream`
         : (process.env.NODE_ENV === 'development' ? 'ws://localhost:8000/ui-stream' : `${defaultWsBase}/ui-stream`);
 
       ws.current = new WebSocket(wsUrl);
@@ -168,7 +168,7 @@ export default function Home() {
   };
 
   const toggleCall = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
       || (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
     console.log(apiUrl);
 
