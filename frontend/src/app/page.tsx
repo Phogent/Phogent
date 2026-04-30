@@ -169,7 +169,7 @@ export default function Home() {
 
   const toggleCall = async () => {
     const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
-      || (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+      || (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://phone-agent-api.lucaswebber.dev');
     console.log(apiUrl);
 
     if (callActive) {
