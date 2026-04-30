@@ -3,9 +3,11 @@ import json
 import asyncio
 import logging
 import websockets
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Explicitly load from project root (two levels up from this file: services/ -> backend/ -> root)
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env")
 
 # Configure logging
 logging.basicConfig(
@@ -16,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger("ElevenLabsService")
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
+DEFAULT_VOICE_ID = "pNInz6obpgDQGcFmaJgB" # Adam (standard free tier voice)
 
 if not ELEVENLABS_API_KEY:
     logger.warning("ELEVENLABS_API_KEY is not set — requests will likely fail")
@@ -52,11 +54,17 @@ class ElevenLabsService:
             ) as websocket:
                 logger.info("TTS WebSocket connected")
 
+                # Fetch the first chunk to send with the initial voice_settings payload
+                try:
+                    first_chunk = await anext(text_iterator)
+                except StopAsyncIteration:
+                    first_chunk = ""
+
                 await websocket.send(json.dumps({
-                    "text": " ",
+                    "text": first_chunk + (" " if first_chunk else ""),
                     "voice_settings": voice_settings
                 }))
-                logger.debug("TTS init message sent (yelling=%s)", is_yelling)
+                logger.debug("TTS init message sent with first chunk (yelling=%s)", is_yelling)
 
                 async def send_text():
                     chunk_count = 0

@@ -1,11 +1,13 @@
 import os
 import logging
+from pathlib import Path
 from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse, Connect
 from twilio.base.exceptions import TwilioRestException
 from dotenv import load_dotenv
 
-load_dotenv()
+# Explicitly load from project root (two levels up from this file: services/ -> backend/ -> root)
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env")
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
